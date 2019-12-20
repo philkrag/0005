@@ -18,6 +18,7 @@
 // 2019-07-20   || Phillip Kraguljac    || Created.
 // 2019-09-28   || Phillip Kraguljac    || Version 1.1
 // 2019-12-19   || Phillip Kraguljac    || Version 1.2
+// 2019-12-20   || Phillip Kraguljac    || Version 1.3
 // /////////////////////////////////////////////////////////////////////// VERSION CONTROL
 */
 
@@ -31,10 +32,9 @@ int Measure_Delay = 10;                                                         
 int Waiting_Delay = 400;                                                            // Cycle time allocated for start-up.
 int Serial_Output_Delay = 60;                                                       // Time allowed for sending serial.
 int Override_Switch = 53;                                                           // IO Input address.
-int Sensor_Position_Setting[] = {40, 53, 65};                                       // Sensor Positioning Locations
-int Expected_Readings[] = {825, 530, 551};                                          // Sensor Positioning Locations
-//int Sensor_Position_Setting[] = {70};                                             // FOR CALIBRATING
-//int Expected_Readings[] = {300};                                                  // FOR CALIBRATING
+int Sensor_Position_Setting[] = {58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78};                                       // Sensor Positioning Locations
+int Total_Position_Number = 20;                                                     // Total number of values in Sensor_Position_Setting[].
+int Expected_Readings[] = {551, 551, 551, 550, 548, 547, 545, 543, 542, 540, 539, 537, 536, 534, 533, 531, 530, 530, 530, 530, 530};                                          // Sensor Positioning Locations
 int Scan_Speed = 10;                                                                // Time duration between samples.
 int const Scan_Accuracy = 50;                                                       // Total samples taken for each measurement. (default 25)
 
@@ -56,7 +56,7 @@ int Scan_Memory[Scan_Accuracy];                                                 
 int Scan_Indexer = 0;                                                               // Scan measurement memory indexer.
 int Servo_Measuring_Position = Sensor_Position_Setting[0];                          // Max upper position of servo (reset position).
 bool Scan_Completed = false;                                                        // Scan complete flag.
-int Center_Datum_Offset = 65;                                                       // Offset of sensor to center of equipment (rail)
+int Center_Datum_Offset = 94;                                                       // Offset of sensor to center of equipment (rail)
 int Position_Indexer = 0;                                                           // Index for cycling through positions
 
 
@@ -93,13 +93,12 @@ if(Mode_Time_Indexer > Startup_Delay){Mode = "POSITION"; Mode_Restart();}       
 // [MODE] => "POSITIONING"
 if(Mode=="POSITION"){                                                               // Waiting for pallet mode in operation.
 if(Override_Flag){Mode = "OVERRIDE"; Mode_Restart();}                               // Go to override if switched.
-Mode_Time_Indexer = Mode_Time_Indexer + 1;                                          // Increment mode counter.
+Mode_Time_Indexer = Mode_Time_Indexer + 1;                                          // Increment mode counter. 
+Current_Sensor_Y_Axis_Position = Sensor_Position_Setting[Position_Indexer];         // Set the required sensor position variable.
+Y_Axis_Servo.write(Current_Sensor_Y_Axis_Position);                                 // Tell servo to go to position in variable 'pos'
 Upper_LCD_Line = "Mode: "+Mode;                                                     // Set upper LCD line.
 Lower_LCD_Line = Progress_Bar(Position_Delay, Mode_Time_Indexer);                   // Set lower LCD Line.
 General_LCD_Output(Upper_LCD_Line, Lower_LCD_Line);                                 // Display LCD.
-if(Position_Indexer>sizeof(Position_Indexer)){Position_Indexer = 0;}                // Reset position index if at end.
-else{Current_Sensor_Y_Axis_Position = Sensor_Position_Setting[Position_Indexer];}   // Set the servor position based on indexer.
-Y_Axis_Servo.write(Current_Sensor_Y_Axis_Position);                                 // tell servo to go to position in variable 'pos'                 
 if(Mode_Time_Indexer > Position_Delay){Mode = "MEASURE"; Mode_Restart();}           // Switch mode once complete.
 }
 
@@ -111,14 +110,9 @@ Upper_LCD_Line = "Position: "+String(Current_Sensor_Y_Axis_Position);           
 Lower_LCD_Line = "=> ";                                                             // Set lower LCD Line.
 General_LCD_Output(Upper_LCD_Line, Lower_LCD_Line);                                 // Display LCD.
 delay(Scan_Speed);                                                                  // Delay between scan cycles.
-if(Position_Indexer>sizeof(Position_Indexer)){                                      // Set complete scan flag.
-Scan_Completed=true;                                                                // Trigger scan complete flag.
-}else{                                                                              // ...
 Accurate_Scan_Sensor(Sensor_Trigger_A1, Sensor_Echo_A1, Scan_Accuracy);             // Complete sensor scan procedure.
-}                                                                                   // ...
-if(Scan_Completed = true && Mode_Time_Indexer > Measure_Delay){                     // ...
-Mode = "DISPLAY";                                                                   // ...
-Position_Indexer++;                                                                 // ...
+if(Mode_Time_Indexer > Measure_Delay){                                              // ...
+Mode = "DISPLAY";                                                                   // ...                                                              // ...
 Mode_Restart();                                                                     // ...
 }                                                                                   // Switch mode once complete.
 }                                                                                   // ...
@@ -140,10 +134,16 @@ Upper_LCD_Line = "Position: "+String(Current_Sensor_Y_Axis_Position);           
 Lower_LCD_Line = "=> "+String(Current_Measurement_Reading)+"mm"+Out_Of_Tolerance_Warning;                 // Set lower LCD Line.
 General_LCD_Output(Upper_LCD_Line, Lower_LCD_Line);                                 // Display LCD.
 if(Mode_Time_Indexer > Waiting_Delay){                                              // Once measurement timer has completed.
-Mode = "POSITION"; Mode_Restart();                                                  // Set upper LCD line.
+Mode = "POSITION";                                                                  // ...
+if(Position_Indexer>=Total_Position_Number){                                        // ...
+Position_Indexer = 0;                                                               // Reset position index if at end.
+}else{                                                                              // ...
+Position_Indexer++;                                                                 // Increase the position index variable.
+}                                                                                   // ...
+Mode_Restart();                                                                     // Set upper LCD line.
 Current_Measurement_Reading = 0;                                                    // Reset temp measurement reading variable.
-}
-} 
+}                                                                                   // ...
+}                                                                                   // ...
 
 
 // [MODE] => "WAITING"
